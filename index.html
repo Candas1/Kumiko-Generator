@@ -3,63 +3,79 @@
 <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: #eee; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1300px; }
-        .controls { background: #2d2d2d; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; border: 1px solid #444; width: 950px; }
-        .item { display: flex; flex-direction: column; gap: 5px; }
+        body { font-family: sans-serif; background: #1a1a1a; color: #eee; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Left Sidebar for Controls */
+        .left-sidebar { width: 320px; background: #2d2d2d; border-right: 1px solid #444; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
+        
+        /* Main Viewport for Canvas */
+        .main-view { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #1a1a1a; padding: 20px; overflow: auto; }
+        
+        /* Right Sidebar for BOM */
+        .right-sidebar { width: 280px; background: #2d2d2d; border-left: 1px solid #444; padding: 15px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
+
+        .item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; }
         label { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; }
         .val-out { font-size: 10px; color: #ffc107; font-family: monospace; }
-        .sidebar { background: #2d2d2d; padding: 15px; border-radius: 8px; border: 1px solid #444; min-width: 280px; max-height: 700px; overflow-y: auto; }
-        .sidebar h3 { margin-top: 0; font-size: 14px; color: #ffc107; border-bottom: 1px solid #444; padding-bottom: 5px; }
-        .pattern-group { margin-bottom: 20px; }
-        .pattern-header { font-size: 11px; font-weight: bold; color: #fff; text-transform: uppercase; margin-bottom: 8px; background: #3d3d3d; padding: 4px 8px; border-radius: 3px; }
-        .stat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 11px; padding-left: 10px; }
-        .color-swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #555; }
-        .gallery { display: flex; gap: 10px; margin-bottom: 15px; background: #2d2d2d; padding: 10px; border-radius: 8px; border: 1px solid #444; flex-wrap: wrap; justify-content: center; }
-        .pattern-thumb { width: 70px; height: 80px; border: 2px solid #555; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; transition: 0.2s; font-size: 9px; padding-top: 5px; }
+        
+        h3 { margin-top: 0; font-size: 14px; color: #ffc107; border-bottom: 1px solid #444; padding-bottom: 5px; text-transform: uppercase; }
+        
+        /* Gallery inside Sidebar */
+        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .pattern-thumb { height: 70px; border: 2px solid #555; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; transition: 0.2s; font-size: 9px; padding: 5px; }
         .pattern-thumb.active { border-color: #ffc107; background: #333; }
-        .pattern-thumb svg { width: 35px; height: 35px; stroke: #a67c52; fill: none; stroke-width: 2; margin-bottom: 5px; }
+        .pattern-thumb svg { width: 30px; height: 30px; stroke: #a67c52; fill: none; stroke-width: 2; margin-bottom: 5px; }
         .pattern-thumb span { text-align: center; line-height: 1; }
-        input, select, button { background: #444; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px; }
+
+        input, select, button { background: #444; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 12px; }
         button { cursor: pointer; font-weight: bold; transition: 0.2s; }
-        #saveBtn { background: #4a6fa5; grid-column: span 2; margin-top: 10px; height: 35px; }
-        #resetBtn { background: #853b3b; grid-column: span 2; margin-top: 10px; height: 35px; }
+        #saveBtn { background: #4a6fa5; margin-top: 5px; }
+        #resetBtn { background: #853b3b; margin-top: 5px; }
+        
+        .stat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 11px; }
+        .color-swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #555; }
+        .pattern-header { font-size: 11px; font-weight: bold; color: #fff; text-transform: uppercase; margin: 15px 0 8px 0; background: #3d3d3d; padding: 4px 8px; border-radius: 3px; }
         canvas { border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #fileHint { font-size: 9px; color: #888; font-style: italic; }
+        #fileHint { font-size: 9px; color: #888; font-style: italic; margin-top: 2px; }
     </style>
 </head>
 <body>
 
-    <div class="gallery" id="patternGallery">
-        <div class="pattern-thumb" data-value="asanoha" title="Asanoha"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L20,30 M5,30 L27.5,17.5 M35,30 L12.5,17.5 M20,21.5 L20,30 M12.5,25 L20,21.5 L27.5,25"/></svg><span>ASANOHA</span></div>
-        <div class="pattern-thumb" data-value="sakura" title="Sakura"><svg viewBox="0 0 40 40"><path d="M20,20 L20,5 M20,20 L33,28 M20,20 L7,28 M20,10 L25,5 L15,5 L20,10 M30,22 L35,28 L30,33 L30,22 M10,22 L5,28 L10,33 L10,22"/></svg><span>SAKURA</span></div>
-        <div class="pattern-thumb" data-value="shippo" title="Kaku-Shippo"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L12.5,21.5 L20,30 L27.5,21.5 L20,5"/></svg><span>SHIPPO</span></div>
-        <div class="pattern-thumb" data-value="goma" title="Goma"><svg viewBox="0 0 40 40"><path d="M20,5 L16,15 L24,15 L20,5 Z"/></svg><span>GOMA</span></div>
-        <div class="pattern-thumb" data-value="smart" title="Smart Mosaic"><svg viewBox="0 0 40 40" style="stroke:#ffc107"><path d="M5,5 L35,35 M35,5 L5,35 M20,5 L20,35 M5,20 L35,20"/></svg><span>SMART MIX</span></div>
-        <div class="pattern-thumb" data-value="noise" title="Random Flow"><svg viewBox="0 0 40 40" style="stroke:#00bcd4"><path d="M5,20 Q10,5 20,20 T35,20 M5,30 Q10,15 20,30 T35,30"/></svg><span>RANDOM FLOW</span></div>
-    </div>
+    <div class="left-sidebar">
+        <h3>1. Patterns</h3>
+        <div class="gallery" id="patternGallery">
+            <div class="pattern-thumb" data-value="asanoha" title="Asanoha"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L20,30 M5,30 L27.5,17.5 M35,30 L12.5,17.5 M20,21.5 L20,30 M12.5,25 L20,21.5 L27.5,25"/></svg><span>ASANOHA</span></div>
+            <div class="pattern-thumb" data-value="sakura" title="Sakura"><svg viewBox="0 0 40 40"><path d="M20,20 L20,5 M20,20 L33,28 M20,20 L7,28 M20,10 L25,5 L15,5 L20,10 M30,22 L35,28 L30,33 L30,22 M10,22 L5,28 L10,33 L10,22"/></svg><span>SAKURA</span></div>
+            <div class="pattern-thumb" data-value="shippo" title="Kaku-Shippo"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L12.5,21.5 L20,30 L27.5,21.5 L20,5"/></svg><span>SHIPPO</span></div>
+            <div class="pattern-thumb" data-value="goma" title="Goma"><svg viewBox="0 0 40 40"><path d="M20,5 L16,15 L24,15 L20,5 Z"/></svg><span>GOMA</span></div>
+            <div class="pattern-thumb" data-value="smart" title="Smart Mosaic"><svg viewBox="0 0 40 40" style="stroke:#ffc107"><path d="M5,5 L35,35 M35,5 L5,35 M20,5 L20,35 M5,20 L35,20"/></svg><span>SMART MIX</span></div>
+            <div class="pattern-thumb" data-value="noise" title="Random Flow"><svg viewBox="0 0 40 40" style="stroke:#00bcd4"><path d="M5,20 Q10,5 20,20 T35,20 M5,30 Q10,15 20,30 T35,30"/></svg><span>RANDOM FLOW</span></div>
+        </div>
 
-    <div class="controls">
+        <h3>2. Settings</h3>
         <div class="item">
-            <label>1. Photo</label>
+            <label>Upload Photo</label>
             <input type="file" id="fileInput" accept="image/*">
             <span id="fileHint">No file loaded</span>
         </div>
-        <div class="item"><div class="label-row"><label>2. Color Steps</label><span class="val-out" id="v-colorSlider">8</span></div><input type="range" id="colorSlider" min="2" max="15" value="8"></div>
-        <div class="item"><div class="label-row"><label>3. Density (Scroll)</label><span class="val-out" id="v-triSlider">35</span></div><input type="range" id="triSlider" min="10" max="100" value="35"></div>
-        <div class="item"><div class="label-row"><label>4. Contrast</label><span class="val-out" id="v-contrastSlider">1.2</span></div><input type="range" id="contrastSlider" min="1" max="3" step="0.1" value="1.2"></div>
-        <div class="item"><div class="label-row"><label>5. Grid Weight</label><span class="val-out" id="v-gridThick">1.0</span></div><input type="range" id="gridThick" min="0.1" max="5" step="0.1" value="1.0"></div>
-        <div class="item"><div class="label-row"><label>6. Pattern Weight</label><span class="val-out" id="v-patThick">1.5</span></div><input type="range" id="patThick" min="0.1" max="5" step="0.1" value="1.5"></div>
-        <div class="item"><label>7. Grid Color</label><input type="color" id="framePicker" value="#a67c52"></div>
-        <div class="item"><label>8. Void Color</label><input type="color" id="bgPicker" value="#000033"></div>
+        <div class="item"><div class="label-row"><label>Color Steps</label><span class="val-out" id="v-colorSlider">8</span></div><input type="range" id="colorSlider" min="2" max="15" value="8"></div>
+        <div class="item"><div class="label-row"><label>Density</label><span class="val-out" id="v-triSlider">35</span></div><input type="range" id="triSlider" min="10" max="100" value="35"></div>
+        <div class="item"><div class="label-row"><label>Contrast</label><span class="val-out" id="v-contrastSlider">1.2</span></div><input type="range" id="contrastSlider" min="1" max="3" step="0.1" value="1.2"></div>
+        <div class="item"><div class="label-row"><label>Grid Weight</label><span class="val-out" id="v-gridThick">1.0</span></div><input type="range" id="gridThick" min="0.1" max="5" step="0.1" value="1.0"></div>
+        <div class="item"><div class="label-row"><label>Pattern Weight</label><span class="val-out" id="v-patThick">1.5</span></div><input type="range" id="patThick" min="0.1" max="5" step="0.1" value="1.5"></div>
+        <div class="item"><label>Grid Color</label><input type="color" id="framePicker" value="#a67c52"></div>
+        <div class="item"><label>Void Color</label><input type="color" id="bgPicker" value="#000033"></div>
+        
         <button id="saveBtn">Save PNG</button>
         <button id="resetBtn">Reset Defaults</button>
     </div>
 
-    <div class="main-container">
-        <div id="canvas-holder"></div>
-        <div class="sidebar"><h3>Bill of Materials</h3><div id="stats-content">Upload an image...</div></div>
+    <div class="main-view" id="canvas-holder"></div>
+
+    <div class="right-sidebar">
+        <h3>Bill of Materials</h3>
+        <div id="stats-content">Upload an image...</div>
     </div>
 
     <script>
@@ -110,13 +126,11 @@
             });
 
             document.getElementById('saveBtn').addEventListener('click', () => saveCanvas('kumiko_design', 'png'));
-            document.getElementById('resetBtn').addEventListener('click', resetToDefaults);
-        }
-
-        function resetToDefaults() {
-            localStorage.removeItem('kumikoSettings'); // Clear saved data
-            loadSettings(); // Re-apply base defaults
-            redraw();
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                localStorage.removeItem('kumikoSettings');
+                loadSettings();
+                redraw();
+            });
         }
 
         function setActivePattern(val) {
@@ -142,14 +156,13 @@
                 patWt: document.getElementById('patThick').value,
                 gridCol: document.getElementById('framePicker').value,
                 voidCol: document.getElementById('bgPicker').value,
-                fileName: document.getElementById('fileHint').innerText // Save filename hint
+                fileName: document.getElementById('fileHint').innerText
             };
             localStorage.setItem('kumikoSettings', JSON.stringify(settings));
         }
 
         function loadSettings() {
             const saved = JSON.parse(localStorage.getItem('kumikoSettings')) || DEFAULTS;
-            
             setActivePattern(saved.pattern);
             document.getElementById('colorSlider').value = saved.colorSteps;
             document.getElementById('triSlider').value = saved.density;
@@ -159,9 +172,7 @@
             document.getElementById('framePicker').value = saved.gridCol;
             document.getElementById('bgPicker').value = saved.voidCol;
             document.getElementById('fileHint').innerText = saved.fileName;
-            
             updateTargetColor(saved.voidCol);
-            
             document.querySelectorAll('.val-out').forEach(span => {
                 let id = span.id.replace('v-', '');
                 if(document.getElementById(id)) span.innerText = document.getElementById(id).value;
@@ -171,18 +182,14 @@
         function handleUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
-            document.getElementById('fileHint').innerText = "Last file: " + file.name;
+            document.getElementById('fileHint').innerText = "Last: " + file.name;
             saveSettings();
-            
             const reader = new FileReader();
             reader.onload = (event) => {
                 loadImage(event.target.result, loadedImg => {
-                    img = loadedImg;
-                    img.loadPixels();
+                    img = loadedImg; img.loadPixels();
                     resizeCanvas(800, 800 * (img.height / img.width));
-                    isReady = true;
-                    redraw();
+                    isReady = true; redraw();
                 });
             };
             reader.readAsDataURL(file);
@@ -195,9 +202,7 @@
             else val = min(100, val + 1);
             slider.value = val;
             document.getElementById('v-triSlider').innerText = val;
-            saveSettings();
-            redraw();
-            return false;
+            saveSettings(); redraw(); return false;
         }
 
         function draw() {
@@ -269,16 +274,15 @@
             let container = document.getElementById('stats-content');
             let html = ""; let grandTotal = 0;
             for (let pattern in matrix) {
-                html += `<div class="pattern-group"><div class="pattern-header">${pattern}</div>`;
-                let colors = matrix[pattern]; let patternTotal = 0;
+                html += `<div class="pattern-header">${pattern}</div>`;
+                let colors = matrix[pattern];
                 let sortedColors = Object.entries(colors).sort((a,b) => b[1]-a[1]);
                 for (let [color, count] of sortedColors) {
                     html += `<div class="stat-item"><div class="color-swatch" style="background:${color}"></div><span>${color}: <strong>${count}</strong></span></div>`;
-                    patternTotal += count; grandTotal += count;
+                    grandTotal += count;
                 }
-                html += `<div style="font-size:10px; padding-left:10px; color:#888;">Subtotal: ${patternTotal}</div></div>`;
             }
-            html += `<div style="border-top:1px solid #444; padding-top:10px; font-weight:bold;">Total Pieces: ${grandTotal}</div>`;
+            html += `<div style="border-top:1px solid #444; margin-top:10px; padding-top:10px; font-weight:bold;">Total Units: ${grandTotal}</div>`;
             container.innerHTML = html;
         }
 
@@ -292,7 +296,9 @@
                 for(let i=0; i<3; i++) {
                     let ang = TWO_PI/3 * i + (isUp ? PI/6 : -PI/6);
                     let px = x + cos(ang) * s_pad/3; let py = cy + sin(ang) * s_pad/3;
-                    line(x, cy, px, py); line(px, py, x + cos(ang+0.5) * s_pad/2, cy + sin(ang+0.5) * s_pad/2); line(px, py, x + cos(ang-0.5) * s_pad/2, cy + sin(ang-0.5) * s_pad/2);
+                    line(x, cy, px, py);
+                    line(px, py, x + cos(ang+0.5) * s_pad/2, cy + sin(ang+0.5) * s_pad/2);
+                    line(px, py, x + cos(ang-0.5) * s_pad/2, cy + sin(ang-0.5) * s_pad/2);
                 }
             } else if (type === 'shippo') {
                 line(x, cy + tipY, x - s_pad/4, cy); line(x, cy + tipY, x + s_pad/4, cy);
@@ -309,8 +315,7 @@
                 let hexVal = "#" + hex(p[0],2) + hex(p[1],2) + hex(p[2],2);
                 document.getElementById('bgPicker').value = hexVal;
                 updateTargetColor(hexVal);
-                saveSettings();
-                redraw();
+                saveSettings(); redraw();
             }
         }
     </script>
