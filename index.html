@@ -4,32 +4,42 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #eee; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .left-sidebar { width: 320px; background: #2d2d2d; border-right: 1px solid #444; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
+        
+        .left-sidebar { width: 320px; background: #2d2d2d; border-right: 1px solid #444; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
         .main-view { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #1a1a1a; padding: 20px; overflow: auto; }
         .right-sidebar { width: 280px; background: #2d2d2d; border-left: 1px solid #444; padding: 15px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
+
         .item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; }
         label { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; }
         .val-out { font-size: 10px; color: #ffc107; font-family: monospace; }
+        
         h3 { margin-top: 0; font-size: 14px; color: #ffc107; border-bottom: 1px solid #444; padding-bottom: 5px; text-transform: uppercase; }
-        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-        .pattern-thumb { height: 70px; border: 2px solid #555; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; transition: 0.2s; font-size: 9px; padding: 5px; }
+        
+        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+        .pattern-thumb { height: 75px; border: 2px solid #555; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; transition: 0.2s; font-size: 9px; padding: 5px; }
         .pattern-thumb.active { border-color: #ffc107; background: #333; }
         .pattern-thumb svg { width: 30px; height: 30px; stroke: #a67c52; fill: none; stroke-width: 2; margin-bottom: 5px; }
+
         input, select, button { background: #444; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 12px; }
-        button { cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button { cursor: pointer; font-weight: bold; transition: 0.2s; margin-top: 5px; }
         #saveBtn { background: #4a6fa5; }
         #helpBtn { background: #555; }
         #resetBtn { background: #853b3b; }
+        
         .stat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 11px; }
         .color-swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #555; }
         .pattern-header { font-size: 11px; font-weight: bold; color: #fff; text-transform: uppercase; margin: 15px 0 8px 0; background: #3d3d3d; padding: 4px 8px; border-radius: 3px; }
-        canvas { border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         
         /* Modal Styles */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-        .modal-content { background: #2d2d2d; margin: 5% auto; padding: 30px; border: 1px solid #444; width: 60%; border-radius: 8px; max-height: 80vh; overflow-y: auto; line-height: 1.6; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-content { background: #2d2d2d; margin: 5% auto; padding: 30px; border: 1px solid #444; width: 500px; border-radius: 8px; line-height: 1.6; }
+        .modal-content h2 { margin-top: 0; color: #ffc107; font-size: 18px; }
+        .modal-content ul { padding-left: 20px; font-size: 13px; color: #ccc; }
+        .modal-content li { margin-bottom: 10px; }
+        .close { color: #aaa; float: right; font-size: 24px; cursor: pointer; }
+
+        canvas { border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -37,12 +47,15 @@
     <div id="helpModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h2 style="color:#ffc107">Kumiko Generator Guide</h2>
-            <p><strong>1. Patterns:</strong> Choose from traditional designs like Asanoha or Goma. Use <em>Smart Mix</em> to map patterns by brightness.</p>
-            <p><strong>2. Color Sampling:</strong> Click anywhere on the canvas to pick a "Void Color." Areas matching this color will remain empty.</p>
-            <p><strong>3. Grid Logic:</strong> Use the weights to differentiate frame thickness from pattern thickness. Padding is added automatically to prevent overlaps.</p>
-            <p><strong>4. BOM Sidebar:</strong> View exactly how many pieces of each color and pattern combination you need for assembly.</p>
-            <p><strong>5. Persistence:</strong> Settings are saved to your browser automatically. Use "Reset Defaults" to clear them.</p>
+            <h2>How to Use This App</h2>
+            <ul>
+                <li><strong>Upload Photo:</strong> Select an image to generate patterns based on its colors.</li>
+                <li><strong>Select Pattern:</strong> Click a pattern thumb on the left. <em>Smart Mix</em> uses brightness to pick patterns; <em>Random Flow</em> uses noise.</li>
+                <li><strong>Set Empty Areas:</strong> Click any part of the rendered canvas to set that color as the "Void Color," which removes patterns from areas matching that tone.</li>
+                <li><strong>Adjust Detail:</strong> Use the <em>Density</em> slider to change cell size, or use your <strong>mouse wheel</strong> over the canvas to scroll density.</li>
+                <li><strong>Wood Palette:</strong> Use <em>Color Steps</em> to limit the number of unique wood colors in your design.</li>
+                <li><strong>Bill of Materials:</strong> Check the right sidebar for the exact count of pieces needed for each pattern and color combination.</li>
+            </ul>
         </div>
     </div>
 
@@ -61,8 +74,11 @@
         <div class="item"><label>Photo</label><input type="file" id="fileInput" accept="image/*"><span id="fileHint" style="font-size:9px;color:#888"></span></div>
         <div class="item"><div class="label-row"><label>Color Steps</label><span class="val-out" id="v-colorSlider">8</span></div><input type="range" id="colorSlider" min="2" max="15" value="8"></div>
         <div class="item"><div class="label-row"><label>Density</label><span class="val-out" id="v-triSlider">35</span></div><input type="range" id="triSlider" min="10" max="100" value="35"></div>
+        <div class="item"><div class="label-row"><label>Contrast</label><span class="val-out" id="v-contrastSlider">1.2</span></div><input type="range" id="contrastSlider" min="1" max="3" step="0.1" value="1.2"></div>
         <div class="item"><div class="label-row"><label>Grid Weight</label><span class="val-out" id="v-gridThick">1.0</span></div><input type="range" id="gridThick" min="0.1" max="5" step="0.1" value="1.0"></div>
+        <div class="item"><div class="label-row"><label>Pattern Weight</label><span class="val-out" id="v-patThick">1.5</span></div><input type="range" id="patThick" min="0.1" max="5" step="0.1" value="1.5"></div>
         <div class="item"><label>Grid Color</label><input type="color" id="framePicker" value="#a67c52"></div>
+        <div class="item"><label>Void Color</label><input type="color" id="bgPicker" value="#000033"></div>
         
         <button id="saveBtn">Save PNG</button>
         <button id="helpBtn" onclick="openModal()">Help & Documentation</button>
@@ -77,8 +93,8 @@
     </div>
 
     <script>
-        let img; let isReady = false; let targetColor = [0, 0, 51]; let currentPattern = 'asanoha';
-        const DEFAULTS = { pattern: 'asanoha', colorSteps: "8", density: "35", gridWt: "1.0", gridCol: "#a67c52", voidCol: "#000033", fileName: "No file loaded" };
+        let img, isReady = false, targetColor = [0, 0, 51], currentPattern = 'asanoha';
+        const DEFAULTS = { pattern: 'asanoha', colorSteps: "8", density: "35", contrast: "1.2", gridWt: "1.0", patWt: "1.5", gridCol: "#a67c52", voidCol: "#000033", fileName: "No file loaded" };
 
         function openModal() { document.getElementById('helpModal').style.display = "block"; }
         function closeModal() { document.getElementById('helpModal').style.display = "none"; }
@@ -109,8 +125,12 @@
             if (active) { active.classList.add('active'); currentPattern = val; }
         }
 
+        function updateTargetColor(hexVal) {
+            targetColor = [parseInt(hexVal.slice(1,3), 16), parseInt(hexVal.slice(3,5), 16), parseInt(hexVal.slice(5,7), 16)];
+        }
+
         function saveSettings() {
-            const settings = { pattern: currentPattern, colorSteps: document.getElementById('colorSlider').value, density: document.getElementById('triSlider').value, gridWt: document.getElementById('gridThick').value, gridCol: document.getElementById('framePicker').value, fileName: document.getElementById('fileHint').innerText };
+            const settings = { pattern: currentPattern, colorSteps: document.getElementById('colorSlider').value, density: document.getElementById('triSlider').value, contrast: document.getElementById('contrastSlider').value, gridWt: document.getElementById('gridThick').value, patWt: document.getElementById('patThick').value, gridCol: document.getElementById('framePicker').value, voidCol: document.getElementById('bgPicker').value, fileName: document.getElementById('fileHint').innerText };
             localStorage.setItem('kumikoSettings', JSON.stringify(settings));
         }
 
@@ -119,9 +139,13 @@
             setActivePattern(saved.pattern);
             document.getElementById('colorSlider').value = saved.colorSteps;
             document.getElementById('triSlider').value = saved.density;
+            document.getElementById('contrastSlider').value = saved.contrast;
             document.getElementById('gridThick').value = saved.gridWt;
+            document.getElementById('patThick').value = saved.patWt;
             document.getElementById('framePicker').value = saved.gridCol;
+            document.getElementById('bgPicker').value = saved.voidCol;
             document.getElementById('fileHint').innerText = saved.fileName;
+            updateTargetColor(saved.voidCol);
             document.querySelectorAll('.val-out').forEach(span => {
                 let id = span.id.replace('v-', ''); if(document.getElementById(id)) span.innerText = document.getElementById(id).value;
             });
@@ -154,6 +178,8 @@
             let colorSteps = parseInt(document.getElementById('colorSlider').value);
             let gridCol = document.getElementById('framePicker').value;
             let gridWt = parseFloat(document.getElementById('gridThick').value);
+            let patWt = parseFloat(document.getElementById('patThick').value);
+            let contrast = parseFloat(document.getElementById('contrastSlider').value);
             let matrix = {};
 
             stroke(gridCol); strokeWeight(gridWt); noFill();
@@ -169,30 +195,26 @@
             }
 
             if (isReady && img) {
-                strokeWeight(gridWt * 1.5); strokeCap(ROUND);
+                strokeWeight(patWt); strokeCap(ROUND);
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < numTriW * 2; c++) {
                         let x = c * (sideLen / 2); let isUp = (r + c) % 2 === 0; let cy = r * h + (isUp ? h/3 * 2 : h/3); 
                         let pCol = img.get(floor(map(x, 0, width, 0, img.width)), floor(map(cy, 0, height, 0, img.height)));
-                        let rq = floor(pCol[0] / (256/colorSteps)) * (256/colorSteps);
-                        let gq = floor(pCol[1] / (256/colorSteps)) * (256/colorSteps);
-                        let bq = floor(pCol[2] / (256/colorSteps)) * (256/colorSteps);
+                        let rq = floor(constrain(pCol[0] * contrast, 0, 255) / (256/colorSteps)) * (256/colorSteps);
+                        let gq = floor(constrain(pCol[1] * contrast, 0, 255) / (256/colorSteps)) * (256/colorSteps);
+                        let bq = floor(constrain(pCol[2] * contrast, 0, 255) / (256/colorSteps)) * (256/colorSteps);
                         let hexStr = "#" + hex(rq,2) + hex(gq,2) + hex(bq,2);
 
                         if (dist(rq, gq, bq, targetColor[0], targetColor[1], targetColor[2]) > 40) {
                             stroke(rq, gq, bq);
-                            let selectedType = currentPattern;
+                            let sel = currentPattern;
                             if (currentPattern === 'smart') {
-                                let bright = (rq + gq + bq) / 3;
-                                if (bright < 85) selectedType = 'goma';
-                                else if (bright < 170) selectedType = 'shippo';
-                                else selectedType = 'asanoha';
+                                let b = (rq+gq+bq)/3; sel = b < 85 ? 'goma' : (b < 170 ? 'shippo' : 'asanoha');
                             } else if (currentPattern === 'noise') {
-                                let n = noise(c * 0.1, r * 0.1);
-                                if (n < 0.3) selectedType = 'goma'; else if (n < 0.6) selectedType = 'shippo'; else selectedType = 'asanoha';
+                                let n = noise(c*0.1, r*0.1); sel = n < 0.3 ? 'goma' : (n < 0.6 ? 'shippo' : 'asanoha');
                             }
-                            renderPattern(selectedType, x, cy, sideLen, h, isUp, gridWt);
-                            if (!matrix[selectedType]) matrix[selectedType] = {}; matrix[selectedType][hexStr] = (matrix[selectedType][hexStr] || 0) + 1;
+                            renderPattern(sel, x, cy, sideLen, h, isUp, gridWt);
+                            if (!matrix[sel]) matrix[sel] = {}; matrix[sel][hexStr] = (matrix[sel][hexStr] || 0) + 1;
                         }
                     }
                 }
@@ -204,8 +226,8 @@
             let container = document.getElementById('stats-content'); let html = ""; let grandTotal = 0;
             for (let pattern in matrix) {
                 html += `<div class="pattern-header">${pattern}</div>`;
-                let sortedColors = Object.entries(matrix[pattern]).sort((a,b) => b[1]-a[1]);
-                for (let [color, count] of sortedColors) {
+                let sorted = Object.entries(matrix[pattern]).sort((a,b) => b[1]-a[1]);
+                for (let [color, count] of sorted) {
                     html += `<div class="stat-item"><div class="color-swatch" style="background:${color}"></div><span>${color}: <strong>${count}</strong></span></div>`;
                     grandTotal += count;
                 }
@@ -237,7 +259,9 @@
         function mousePressed() {
             if (isReady && img && mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
                 let p = img.get(floor(map(mouseX, 0, width, 0, img.width)), floor(map(mouseY, 0, height, 0, img.height)));
-                targetColor = [p[0], p[1], p[2]]; saveSettings(); redraw();
+                targetColor = [p[0], p[1], p[2]];
+                document.getElementById('bgPicker').value = "#" + hex(p[0],2) + hex(p[1],2) + hex(p[2],2);
+                saveSettings(); redraw();
             }
         }
     </script>
