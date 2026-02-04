@@ -4,70 +4,68 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #eee; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Left Sidebar for Controls */
         .left-sidebar { width: 320px; background: #2d2d2d; border-right: 1px solid #444; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
-        
-        /* Main Viewport for Canvas */
         .main-view { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #1a1a1a; padding: 20px; overflow: auto; }
-        
-        /* Right Sidebar for BOM */
         .right-sidebar { width: 280px; background: #2d2d2d; border-left: 1px solid #444; padding: 15px; overflow-y: auto; height: 100vh; flex-shrink: 0; }
-
         .item { display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; }
         label { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; }
         .val-out { font-size: 10px; color: #ffc107; font-family: monospace; }
-        
         h3 { margin-top: 0; font-size: 14px; color: #ffc107; border-bottom: 1px solid #444; padding-bottom: 5px; text-transform: uppercase; }
-        
-        /* Gallery inside Sidebar */
         .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
         .pattern-thumb { height: 70px; border: 2px solid #555; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; transition: 0.2s; font-size: 9px; padding: 5px; }
         .pattern-thumb.active { border-color: #ffc107; background: #333; }
         .pattern-thumb svg { width: 30px; height: 30px; stroke: #a67c52; fill: none; stroke-width: 2; margin-bottom: 5px; }
-        .pattern-thumb span { text-align: center; line-height: 1; }
-
         input, select, button { background: #444; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; font-size: 12px; }
         button { cursor: pointer; font-weight: bold; transition: 0.2s; }
-        #saveBtn { background: #4a6fa5; margin-top: 5px; }
-        #resetBtn { background: #853b3b; margin-top: 5px; }
-        
+        #saveBtn { background: #4a6fa5; }
+        #helpBtn { background: #555; }
+        #resetBtn { background: #853b3b; }
         .stat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 11px; }
         .color-swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #555; }
         .pattern-header { font-size: 11px; font-weight: bold; color: #fff; text-transform: uppercase; margin: 15px 0 8px 0; background: #3d3d3d; padding: 4px 8px; border-radius: 3px; }
         canvas { border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #fileHint { font-size: 9px; color: #888; font-style: italic; margin-top: 2px; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        .modal-content { background: #2d2d2d; margin: 5% auto; padding: 30px; border: 1px solid #444; width: 60%; border-radius: 8px; max-height: 80vh; overflow-y: auto; line-height: 1.6; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 style="color:#ffc107">Kumiko Generator Guide</h2>
+            <p><strong>1. Patterns:</strong> Choose from traditional designs like Asanoha or Goma. Use <em>Smart Mix</em> to map patterns by brightness.</p>
+            <p><strong>2. Color Sampling:</strong> Click anywhere on the canvas to pick a "Void Color." Areas matching this color will remain empty.</p>
+            <p><strong>3. Grid Logic:</strong> Use the weights to differentiate frame thickness from pattern thickness. Padding is added automatically to prevent overlaps.</p>
+            <p><strong>4. BOM Sidebar:</strong> View exactly how many pieces of each color and pattern combination you need for assembly.</p>
+            <p><strong>5. Persistence:</strong> Settings are saved to your browser automatically. Use "Reset Defaults" to clear them.</p>
+        </div>
+    </div>
+
     <div class="left-sidebar">
         <h3>1. Patterns</h3>
         <div class="gallery" id="patternGallery">
-            <div class="pattern-thumb" data-value="asanoha" title="Asanoha"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L20,30 M5,30 L27.5,17.5 M35,30 L12.5,17.5 M20,21.5 L20,30 M12.5,25 L20,21.5 L27.5,25"/></svg><span>ASANOHA</span></div>
-            <div class="pattern-thumb" data-value="sakura" title="Sakura"><svg viewBox="0 0 40 40"><path d="M20,20 L20,5 M20,20 L33,28 M20,20 L7,28 M20,10 L25,5 L15,5 L20,10 M30,22 L35,28 L30,33 L30,22 M10,22 L5,28 L10,33 L10,22"/></svg><span>SAKURA</span></div>
-            <div class="pattern-thumb" data-value="shippo" title="Kaku-Shippo"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L12.5,21.5 L20,30 L27.5,21.5 L20,5"/></svg><span>SHIPPO</span></div>
-            <div class="pattern-thumb" data-value="goma" title="Goma"><svg viewBox="0 0 40 40"><path d="M20,5 L16,15 L24,15 L20,5 Z"/></svg><span>GOMA</span></div>
-            <div class="pattern-thumb" data-value="smart" title="Smart Mosaic"><svg viewBox="0 0 40 40" style="stroke:#ffc107"><path d="M5,5 L35,35 M35,5 L5,35 M20,5 L20,35 M5,20 L35,20"/></svg><span>SMART MIX</span></div>
-            <div class="pattern-thumb" data-value="noise" title="Random Flow"><svg viewBox="0 0 40 40" style="stroke:#00bcd4"><path d="M5,20 Q10,5 20,20 T35,20 M5,30 Q10,15 20,30 T35,30"/></svg><span>RANDOM FLOW</span></div>
+            <div class="pattern-thumb" data-value="asanoha"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L20,30 M5,30 L27.5,17.5 M35,30 L12.5,17.5 M20,21.5 L20,30 M12.5,25 L20,21.5 L27.5,25"/></svg><span>ASANOHA</span></div>
+            <div class="pattern-thumb" data-value="sakura"><svg viewBox="0 0 40 40"><path d="M20,20 L20,5 M20,20 L33,28 M20,20 L7,28 M20,10 L25,5 L15,5 L20,10 M30,22 L35,28 L30,33 L30,22 M10,22 L5,28 L10,33 L10,22"/></svg><span>SAKURA</span></div>
+            <div class="pattern-thumb" data-value="shippo"><svg viewBox="0 0 40 40"><path d="M20,5 L5,30 L35,30 Z M20,5 L12.5,21.5 L20,30 L27.5,21.5 L20,5"/></svg><span>SHIPPO</span></div>
+            <div class="pattern-thumb" data-value="goma"><svg viewBox="0 0 40 40"><path d="M20,5 L16,15 L24,15 L20,5 Z"/></svg><span>GOMA</span></div>
+            <div class="pattern-thumb" data-value="smart"><svg viewBox="0 0 40 40" style="stroke:#ffc107"><path d="M5,5 L35,35 M35,5 L5,35 M20,5 L20,35 M5,20 L35,20"/></svg><span>SMART MIX</span></div>
+            <div class="pattern-thumb" data-value="noise"><svg viewBox="0 0 40 40" style="stroke:#00bcd4"><path d="M5,20 Q10,5 20,20 T35,20 M5,30 Q10,15 20,30 T35,30"/></svg><span>RANDOM FLOW</span></div>
         </div>
 
         <h3>2. Settings</h3>
-        <div class="item">
-            <label>Upload Photo</label>
-            <input type="file" id="fileInput" accept="image/*">
-            <span id="fileHint">No file loaded</span>
-        </div>
+        <div class="item"><label>Photo</label><input type="file" id="fileInput" accept="image/*"><span id="fileHint" style="font-size:9px;color:#888"></span></div>
         <div class="item"><div class="label-row"><label>Color Steps</label><span class="val-out" id="v-colorSlider">8</span></div><input type="range" id="colorSlider" min="2" max="15" value="8"></div>
         <div class="item"><div class="label-row"><label>Density</label><span class="val-out" id="v-triSlider">35</span></div><input type="range" id="triSlider" min="10" max="100" value="35"></div>
-        <div class="item"><div class="label-row"><label>Contrast</label><span class="val-out" id="v-contrastSlider">1.2</span></div><input type="range" id="contrastSlider" min="1" max="3" step="0.1" value="1.2"></div>
         <div class="item"><div class="label-row"><label>Grid Weight</label><span class="val-out" id="v-gridThick">1.0</span></div><input type="range" id="gridThick" min="0.1" max="5" step="0.1" value="1.0"></div>
-        <div class="item"><div class="label-row"><label>Pattern Weight</label><span class="val-out" id="v-patThick">1.5</span></div><input type="range" id="patThick" min="0.1" max="5" step="0.1" value="1.5"></div>
         <div class="item"><label>Grid Color</label><input type="color" id="framePicker" value="#a67c52"></div>
-        <div class="item"><label>Void Color</label><input type="color" id="bgPicker" value="#000033"></div>
         
         <button id="saveBtn">Save PNG</button>
+        <button id="helpBtn" onclick="openModal()">Help & Documentation</button>
         <button id="resetBtn">Reset Defaults</button>
     </div>
 
@@ -79,85 +77,40 @@
     </div>
 
     <script>
-        let img;
-        let isReady = false;
-        let targetColor = [0, 0, 51];
-        let currentPattern = 'asanoha';
+        let img; let isReady = false; let targetColor = [0, 0, 51]; let currentPattern = 'asanoha';
+        const DEFAULTS = { pattern: 'asanoha', colorSteps: "8", density: "35", gridWt: "1.0", gridCol: "#a67c52", voidCol: "#000033", fileName: "No file loaded" };
 
-        const DEFAULTS = {
-            pattern: 'asanoha',
-            colorSteps: "8",
-            density: "35",
-            contrast: "1.2",
-            gridWt: "1.0",
-            patWt: "1.5",
-            gridCol: "#a67c52",
-            voidCol: "#000033",
-            fileName: "No file loaded"
-        };
+        function openModal() { document.getElementById('helpModal').style.display = "block"; }
+        function closeModal() { document.getElementById('helpModal').style.display = "none"; }
 
         function setup() {
-            let cnv = createCanvas(800, 600);
-            cnv.parent('canvas-holder');
-            pixelDensity(2);
-            noLoop();
-            
+            let cnv = createCanvas(800, 600); cnv.parent('canvas-holder'); pixelDensity(2); noLoop();
             loadSettings();
-
             cnv.mouseWheel(changeDensity);
             document.getElementById('fileInput').addEventListener('change', handleUpload);
-            
             document.querySelectorAll('.pattern-thumb').forEach(thumb => {
-                thumb.addEventListener('click', () => {
-                    setActivePattern(thumb.getAttribute('data-value'));
-                    saveSettings();
-                    redraw();
-                });
+                thumb.addEventListener('click', () => { setActivePattern(thumb.getAttribute('data-value')); saveSettings(); redraw(); });
             });
-
             document.querySelectorAll('input').forEach(el => {
                 el.addEventListener('input', () => {
                     if (el.id === 'bgPicker') updateTargetColor(el.value);
                     let display = document.getElementById('v-' + el.id);
                     if (display) display.innerText = el.value;
-                    saveSettings();
-                    redraw();
+                    saveSettings(); redraw();
                 });
             });
-
             document.getElementById('saveBtn').addEventListener('click', () => saveCanvas('kumiko_design', 'png'));
-            document.getElementById('resetBtn').addEventListener('click', () => {
-                localStorage.removeItem('kumikoSettings');
-                loadSettings();
-                redraw();
-            });
+            document.getElementById('resetBtn').addEventListener('click', () => { localStorage.removeItem('kumikoSettings'); loadSettings(); redraw(); });
         }
 
         function setActivePattern(val) {
             document.querySelectorAll('.pattern-thumb').forEach(t => t.classList.remove('active'));
             const active = document.querySelector(`.pattern-thumb[data-value="${val}"]`);
-            if (active) {
-                active.classList.add('active');
-                currentPattern = val;
-            }
-        }
-
-        function updateTargetColor(hexVal) {
-            targetColor = [parseInt(hexVal.slice(1,3), 16), parseInt(hexVal.slice(3,5), 16), parseInt(hexVal.slice(5,7), 16)];
+            if (active) { active.classList.add('active'); currentPattern = val; }
         }
 
         function saveSettings() {
-            const settings = {
-                pattern: currentPattern,
-                colorSteps: document.getElementById('colorSlider').value,
-                density: document.getElementById('triSlider').value,
-                contrast: document.getElementById('contrastSlider').value,
-                gridWt: document.getElementById('gridThick').value,
-                patWt: document.getElementById('patThick').value,
-                gridCol: document.getElementById('framePicker').value,
-                voidCol: document.getElementById('bgPicker').value,
-                fileName: document.getElementById('fileHint').innerText
-            };
+            const settings = { pattern: currentPattern, colorSteps: document.getElementById('colorSlider').value, density: document.getElementById('triSlider').value, gridWt: document.getElementById('gridThick').value, gridCol: document.getElementById('framePicker').value, fileName: document.getElementById('fileHint').innerText };
             localStorage.setItem('kumikoSettings', JSON.stringify(settings));
         }
 
@@ -166,56 +119,41 @@
             setActivePattern(saved.pattern);
             document.getElementById('colorSlider').value = saved.colorSteps;
             document.getElementById('triSlider').value = saved.density;
-            document.getElementById('contrastSlider').value = saved.contrast;
             document.getElementById('gridThick').value = saved.gridWt;
-            document.getElementById('patThick').value = saved.patWt;
             document.getElementById('framePicker').value = saved.gridCol;
-            document.getElementById('bgPicker').value = saved.voidCol;
             document.getElementById('fileHint').innerText = saved.fileName;
-            updateTargetColor(saved.voidCol);
             document.querySelectorAll('.val-out').forEach(span => {
-                let id = span.id.replace('v-', '');
-                if(document.getElementById(id)) span.innerText = document.getElementById(id).value;
+                let id = span.id.replace('v-', ''); if(document.getElementById(id)) span.innerText = document.getElementById(id).value;
             });
         }
 
         function handleUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            document.getElementById('fileHint').innerText = "Last: " + file.name;
-            saveSettings();
+            const file = e.target.files[0]; if (!file) return;
+            document.getElementById('fileHint').innerText = "Last: " + file.name; saveSettings();
             const reader = new FileReader();
             reader.onload = (event) => {
                 loadImage(event.target.result, loadedImg => {
-                    img = loadedImg; img.loadPixels();
-                    resizeCanvas(800, 800 * (img.height / img.width));
-                    isReady = true; redraw();
+                    img = loadedImg; img.loadPixels(); resizeCanvas(800, 800 * (img.height / img.width)); isReady = true; redraw();
                 });
             };
             reader.readAsDataURL(file);
         }
 
         function changeDensity(event) {
-            let slider = document.getElementById('triSlider');
-            let val = parseInt(slider.value);
-            if (event.deltaY > 0) val = max(10, val - 1);
-            else val = min(100, val + 1);
-            slider.value = val;
-            document.getElementById('v-triSlider').innerText = val;
+            let slider = document.getElementById('triSlider'); let val = parseInt(slider.value);
+            if (event.deltaY > 0) val = max(10, val - 1); else val = min(100, val + 1);
+            slider.value = val; document.getElementById('v-triSlider').innerText = val;
             saveSettings(); redraw(); return false;
         }
 
         function draw() {
             background(targetColor);
             let numTriW = parseInt(document.getElementById('triSlider').value);
-            let sideLen = width / numTriW;
-            let h = (sqrt(3) / 2) * sideLen;
+            let sideLen = width / numTriW; let h = (sqrt(3) / 2) * sideLen;
             let rows = ceil(height / h) + 2;
             let colorSteps = parseInt(document.getElementById('colorSlider').value);
             let gridCol = document.getElementById('framePicker').value;
             let gridWt = parseFloat(document.getElementById('gridThick').value);
-            let patWt = parseFloat(document.getElementById('patThick').value);
-            let contrast = parseFloat(document.getElementById('contrastSlider').value);
             let matrix = {};
 
             stroke(gridCol); strokeWeight(gridWt); noFill();
@@ -231,18 +169,14 @@
             }
 
             if (isReady && img) {
-                strokeWeight(patWt); strokeCap(ROUND);
+                strokeWeight(gridWt * 1.5); strokeCap(ROUND);
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < numTriW * 2; c++) {
-                        let x = c * (sideLen / 2);
-                        let isUp = (r + c) % 2 === 0;
-                        let cy = r * h + (isUp ? h/3 * 2 : h/3); 
-                        let sx = floor(map(x, 0, width, 0, img.width));
-                        let sy = floor(map(cy, 0, height, 0, img.height));
-                        let pCol = img.get(sx, sy);
-                        let rq = floor(constrain(pCol[0] * contrast, 0, 255) / (256/colorSteps)) * (256/colorSteps);
-                        let gq = floor(constrain(pCol[1] * contrast, 0, 255) / (256/colorSteps)) * (256/colorSteps);
-                        let bq = floor(constrain(pCol[2] * contrast, 0, 255) / (256/colorSteps)) * (256/colorSteps);
+                        let x = c * (sideLen / 2); let isUp = (r + c) % 2 === 0; let cy = r * h + (isUp ? h/3 * 2 : h/3); 
+                        let pCol = img.get(floor(map(x, 0, width, 0, img.width)), floor(map(cy, 0, height, 0, img.height)));
+                        let rq = floor(pCol[0] / (256/colorSteps)) * (256/colorSteps);
+                        let gq = floor(pCol[1] / (256/colorSteps)) * (256/colorSteps);
+                        let bq = floor(pCol[2] / (256/colorSteps)) * (256/colorSteps);
                         let hexStr = "#" + hex(rq,2) + hex(gq,2) + hex(bq,2);
 
                         if (dist(rq, gq, bq, targetColor[0], targetColor[1], targetColor[2]) > 40) {
@@ -255,14 +189,10 @@
                                 else selectedType = 'asanoha';
                             } else if (currentPattern === 'noise') {
                                 let n = noise(c * 0.1, r * 0.1);
-                                if (n < 0.3) selectedType = 'goma';
-                                else if (n < 0.6) selectedType = 'shippo';
-                                else if (n < 0.8) selectedType = 'asanoha';
-                                else selectedType = 'sakura';
+                                if (n < 0.3) selectedType = 'goma'; else if (n < 0.6) selectedType = 'shippo'; else selectedType = 'asanoha';
                             }
                             renderPattern(selectedType, x, cy, sideLen, h, isUp, gridWt);
-                            if (!matrix[selectedType]) matrix[selectedType] = {};
-                            matrix[selectedType][hexStr] = (matrix[selectedType][hexStr] || 0) + 1;
+                            if (!matrix[selectedType]) matrix[selectedType] = {}; matrix[selectedType][hexStr] = (matrix[selectedType][hexStr] || 0) + 1;
                         }
                     }
                 }
@@ -271,12 +201,10 @@
         }
 
         function updateSidebarMatrix(matrix) {
-            let container = document.getElementById('stats-content');
-            let html = ""; let grandTotal = 0;
+            let container = document.getElementById('stats-content'); let html = ""; let grandTotal = 0;
             for (let pattern in matrix) {
                 html += `<div class="pattern-header">${pattern}</div>`;
-                let colors = matrix[pattern];
-                let sortedColors = Object.entries(colors).sort((a,b) => b[1]-a[1]);
+                let sortedColors = Object.entries(matrix[pattern]).sort((a,b) => b[1]-a[1]);
                 for (let [color, count] of sortedColors) {
                     html += `<div class="stat-item"><div class="color-swatch" style="background:${color}"></div><span>${color}: <strong>${count}</strong></span></div>`;
                     grandTotal += count;
@@ -296,13 +224,10 @@
                 for(let i=0; i<3; i++) {
                     let ang = TWO_PI/3 * i + (isUp ? PI/6 : -PI/6);
                     let px = x + cos(ang) * s_pad/3; let py = cy + sin(ang) * s_pad/3;
-                    line(x, cy, px, py);
-                    line(px, py, x + cos(ang+0.5) * s_pad/2, cy + sin(ang+0.5) * s_pad/2);
-                    line(px, py, x + cos(ang-0.5) * s_pad/2, cy + sin(ang-0.5) * s_pad/2);
+                    line(x, cy, px, py); line(px, py, x + cos(ang+0.5) * s_pad/2, cy + sin(ang+0.5) * s_pad/2); line(px, py, x + cos(ang-0.5) * s_pad/2, cy + sin(ang-0.5) * s_pad/2);
                 }
             } else if (type === 'shippo') {
-                line(x, cy + tipY, x - s_pad/4, cy); line(x, cy + tipY, x + s_pad/4, cy);
-                line(x, cy + baseY, x - s_pad/4, cy); line(x, cy + baseY, x + s_pad/4, cy);
+                line(x, cy + tipY, x - s_pad/4, cy); line(x, cy + tipY, x + s_pad/4, cy); line(x, cy + baseY, x - s_pad/4, cy); line(x, cy + baseY, x + s_pad/4, cy);
             } else if (type === 'goma') {
                 let midY = cy + (tipY + baseY) / 2.5; let sideX = s_pad / 4;
                 line(x, cy + tipY, x - sideX, midY); line(x, cy + tipY, x + sideX, midY); line(x - sideX, midY, x + sideX, midY);
@@ -312,10 +237,7 @@
         function mousePressed() {
             if (isReady && img && mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
                 let p = img.get(floor(map(mouseX, 0, width, 0, img.width)), floor(map(mouseY, 0, height, 0, img.height)));
-                let hexVal = "#" + hex(p[0],2) + hex(p[1],2) + hex(p[2],2);
-                document.getElementById('bgPicker').value = hexVal;
-                updateTargetColor(hexVal);
-                saveSettings(); redraw();
+                targetColor = [p[0], p[1], p[2]]; saveSettings(); redraw();
             }
         }
     </script>
