@@ -102,6 +102,7 @@
         function setup() {
             let cnv = createCanvas(800, 600); cnv.parent('canvas-holder'); pixelDensity(2); noLoop();
             loadSettings();
+            renderPatternThumbnails();
             cnv.mouseWheel(changeDensity);
             document.getElementById('fileInput').addEventListener('change', handleUpload);
             document.querySelectorAll('.pattern-thumb').forEach(thumb => {
@@ -117,6 +118,37 @@
             });
             document.getElementById('saveBtn').addEventListener('click', () => saveCanvas('kumiko_design', 'png'));
             document.getElementById('resetBtn').addEventListener('click', () => { localStorage.removeItem('kumikoSettings'); loadSettings(); redraw(); });
+        }
+
+        function renderPatternThumbnails() {
+            const types = ['asanoha', 'sakura', 'shippo', 'goma'];
+            const margin = 15, sideLen = 90;
+            const hgt = (sqrt(3) / 2) * sideLen;
+            const w = sideLen + margin * 2;
+            const hCanvas = Math.ceil(hgt) + margin * 2;
+            const x = w / 2, cy = margin + hgt * 2 / 3, isUp = true;
+            types.forEach(type => {
+                let g = createGraphics(w, hCanvas);
+                g.background(26, 26, 26);
+                g.stroke(85); g.strokeWeight(1); g.noFill();
+                let apexY = cy - hgt * 2 / 3, baseY = cy + hgt / 3;
+                g.line(x, apexY, x - sideLen/2, baseY);
+                g.line(x, apexY, x + sideLen/2, baseY);
+                g.line(x - sideLen/2, baseY, x + sideLen/2, baseY);
+                g.stroke('#ffc107'); g.strokeWeight(1.5); g.strokeCap(ROUND);
+                renderPattern(type, x, cy, sideLen, hgt, isUp, 1, g);
+                let thumb = document.querySelector(`.pattern-thumb[data-value="${type}"]`);
+                if (!thumb) return;
+                thumb.innerHTML = '';
+                g.canvas.style.display = 'block';
+                g.canvas.style.width = '55px';
+                g.canvas.style.height = 'auto';
+                g.canvas.style.marginBottom = '5px';
+                thumb.appendChild(g.canvas);
+                let label = document.createElement('span');
+                label.textContent = type.toUpperCase();
+                thumb.appendChild(label);
+            });
         }
 
         function setActivePattern(val) {
@@ -236,24 +268,85 @@
             container.innerHTML = html;
         }
 
-        function renderPattern(type, x, cy, s, h, isUp, pad) {
+        function renderPattern(type, x, cy, s, h, isUp, pad, ctx) {
+            ctx = ctx || window;
             let gap = pad * 1.5; let s_pad = s - (gap * 2.3); let h_pad = (sqrt(3) / 2) * s_pad;
             let tipY = isUp ? -h_pad/3 * 2 : h_pad/3 * 2; let baseY = isUp ? h_pad/3 : -h_pad/3;
+
             if (type === 'asanoha') {
-                line(x, cy + tipY, x, cy); line(x - s_pad/2, cy + baseY, x, cy); line(x + s_pad/2, cy + baseY, x, cy);
-                line(x - s_pad/4, cy + (tipY + baseY)/2, x, cy); line(x + s_pad/4, cy + (tipY + baseY)/2, x, cy); line(x, cy + baseY, x, cy);
+                ctx.line(x, cy + tipY, x, cy); ctx.line(x - s_pad/2, cy + baseY, x, cy); ctx.line(x + s_pad/2, cy + baseY, x, cy);
+                ctx.line(x - s_pad/4, cy + (tipY + baseY)/2, x, cy); ctx.line(x + s_pad/4, cy + (tipY + baseY)/2, x, cy); ctx.line(x, cy + baseY, x, cy);
             } else if (type === 'sakura') {
-                for(let i=0; i<3; i++) {
-                    let ang = TWO_PI/3 * i + (isUp ? PI/6 : -PI/6);
-                    let px = x + cos(ang) * s_pad/3; let py = cy + sin(ang) * s_pad/3;
-                    line(x, cy, px, py); line(px, py, x + cos(ang+0.5) * s_pad/2, cy + sin(ang+0.5) * s_pad/2); line(px, py, x + cos(ang-0.5) * s_pad/2, cy + sin(ang-0.5) * s_pad/2);
-                }
+                // Sakura: 3 lines from the centroid toward each vertex, each cut short with a
+                // perpendicular notch near the tip - the classic notched cherry-blossom petal.
+                let apex = [x, cy + tipY], Lp = [x - s_pad/2, cy + baseY], Rp = [x + s_pad/2, cy + baseY];
+                let f = 0.7, capLen = s_pad * 0.12;
+                [apex, Lp, Rp].forEach(v => {
+                    let dx = v[0]-x, dy = v[1]-cy;
+                    let stopX = x + dx*f, stopY = cy + dy*f;
+                    ctx.line(x, cy, stopX, stopY);
+                    let len = Math.hypot(dx,dy) || 1;
+                    let px = -dy/len, py = dx/len;
+                    ctx.line(stopX-px*capLen, stopY-py*capLen, stopX+px*capLen, stopY+py*capLen);
+                });
             } else if (type === 'shippo') {
-                line(x, cy + tipY, x - s_pad/4, cy); line(x, cy + tipY, x + s_pad/4, cy); line(x, cy + baseY, x - s_pad/4, cy); line(x, cy + baseY, x + s_pad/4, cy);
+                // Shippo: 3 curved lines, each connecting two of the grid triangle's own
+                // vertices, bowing inward toward the third vertex so the curve stays clear
+                // of the grid lines along that edge.
+                let apex = [x, cy + tipY], Lp = [x - s_pad/2, cy + baseY], Rp = [x + s_pad/2, cy + baseY];
+                let bow = s_pad * 0.2;
+                curvedEdge(apex, Lp, bow, ctx, Rp);
+                curvedEdge(Lp, Rp, bow, ctx, apex);
+                curvedEdge(Rp, apex, bow, ctx, Lp);
             } else if (type === 'goma') {
-                let midY = cy + (tipY + baseY) / 2.5; let sideX = s_pad / 4;
-                line(x, cy + tipY, x - sideX, midY); line(x, cy + tipY, x + sideX, midY); line(x - sideX, midY, x + sideX, midY);
+                // Goma: 3 lines, each parallel to one wall of the grid triangle, extended
+                // outward until they touch the other two walls (rather than stopping as a
+                // small floating inset triangle).
+                let apex = [x, cy + tipY], Lp = [x - s_pad/2, cy + baseY], Rp = [x + s_pad/2, cy + baseY];
+                let outerTri = [apex, Lp, Rp];
+                let cx = (apex[0] + Lp[0] + Rp[0]) / 3, ccy = (apex[1] + Lp[1] + Rp[1]) / 3;
+                let k = 0.55;
+                let pts = outerTri.map(p => [cx + k*(p[0]-cx), ccy + k*(p[1]-ccy)]);
+                for (let i = 0; i < 3; i++) {
+                    let a = pts[i], b = pts[(i+1)%3];
+                    let dx = b[0]-a[0], dy = b[1]-a[1];
+                    let ext1 = [a[0]-dx*10, a[1]-dy*10];
+                    let ext2 = [b[0]+dx*10, b[1]+dy*10];
+                    let clipped = clipSegmentToTriangle(ext1, ext2, outerTri);
+                    if (clipped) ctx.line(clipped[0][0], clipped[0][1], clipped[1][0], clipped[1][1]);
+                }
             }
+        }
+
+        function clipSegmentToTriangle(p1, p2, tri) {
+            let tmin = 0, tmax = 1;
+            for (let i = 0; i < 3; i++) {
+                let a = tri[i], b = tri[(i+1)%3], c2 = tri[(i+2)%3];
+                let ex = b[0]-a[0], ey = b[1]-a[1];
+                let nx = -ey, ny = ex;
+                if ((c2[0]-a[0])*nx + (c2[1]-a[1])*ny < 0) { nx = -nx; ny = -ny; }
+                let d1 = (p1[0]-a[0])*nx + (p1[1]-a[1])*ny;
+                let d2 = (p2[0]-a[0])*nx + (p2[1]-a[1])*ny;
+                if (d1 < 0 && d2 < 0) return null;
+                if (d1 >= 0 && d2 >= 0) continue;
+                let t = d1 / (d1 - d2);
+                if (d1 < 0) tmin = Math.max(tmin, t); else tmax = Math.min(tmax, t);
+            }
+            if (tmin > tmax) return null;
+            let ax = p1[0]+(p2[0]-p1[0])*tmin, ay = p1[1]+(p2[1]-p1[1])*tmin;
+            let bx = p1[0]+(p2[0]-p1[0])*tmax, by = p1[1]+(p2[1]-p1[1])*tmax;
+            return [[ax,ay],[bx,by]];
+        }
+
+        function curvedEdge(p1, p2, bow, ctx, toward) {
+            ctx = ctx || window;
+            let mx = (p1[0]+p2[0])/2, my = (p1[1]+p2[1])/2;
+            let dx = p2[0]-p1[0], dy = p2[1]-p1[1];
+            let len = Math.sqrt(dx*dx+dy*dy) || 1;
+            let nx = -dy/len, ny = dx/len;
+            if (toward && (toward[0]-mx)*nx + (toward[1]-my)*ny < 0) { nx = -nx; ny = -ny; }
+            let cx = mx + nx*bow, ccy = my + ny*bow;
+            ctx.bezier(p1[0],p1[1], cx,ccy, cx,ccy, p2[0],p2[1]);
         }
         
         function mousePressed() {
